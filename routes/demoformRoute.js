@@ -1,30 +1,30 @@
 const express = require('express');
-const nodemailer = require('nodemailer'); // Import nodemailer
+const nodemailer = require('nodemailer'); 
 const router = express.Router();
 
-// Configure nodemailer transport
+
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // or another email service provider
+  service: 'gmail', 
   auth: {
-    user: process.env.EMAIL_USER, // Your email address
-    pass: process.env.EMAIL_PASS  // Your email password (or app-specific password)
+    user: process.env.EMAIL_USER, 
+    pass: process.env.EMAIL_PASS  
   }
 });
 
-// Route to handle form submission
-router.post('/demoform', async (req, res) => {
-  const { name, email, phone, location, timeslot } = req.body;
 
-  // Email options
+router.post('/demoform', async (req, res) => {
+  const { name, email, phone, companyName: location, dateTime: timeslot } = req.body;
+
+  
   const mailOptions = {
-    from: process.env.EMAIL_USER, // sender address
-    to: 'fuzzads.co@gmail.com', // list of receivers
+    from: process.env.EMAIL_USER, 
+    to: 'fuzzads.co@gmail.com', 
     subject: 'Booked a free demo session!',
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nLocation: ${location}\nTime Slot: ${timeslot}`
   };
 
   try {
-    // Send email
+    
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Form submitted successfully' });
   } catch (error) {
