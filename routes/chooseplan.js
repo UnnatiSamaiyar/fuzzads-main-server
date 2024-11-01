@@ -19,7 +19,7 @@ router.post('/choose-plan/submit', async (req, res) => {
   // Email content
   const mailOptions = {
     from: process.env.EMAIL_USER,
-    to: 'unnatisamaiyar02@gmail.com', // Send to yourself
+    to: 'contact@fuzzads.com', // Send to yourself
     subject: `New Service Inquiry from ${fullName}`,
     html: `
       <h2 style="color: #26017b;">Service Inquiry</h2>
