@@ -8,10 +8,7 @@ const contact = require('./routes/maincontactform');
 const passport = require('passport'); // Passport must be imported
 const session = require('express-session');
 const cors = require('cors');
-const customplan = require('./routes/customplan.js');
-const chooseplan = require('./routes/chooseplan.js');
-const cashfree = require('./routes/cashfreeRoute.js');
-const payment = require('./routes/paymentRoutes.js')
+const cashfree = require('./routes/cashfreeRoute.js')
 require('dotenv').config(); // Load environment variables
 
 // Passport config
@@ -43,9 +40,6 @@ app.use('/api', formRoutes); // Use form routes under /api
 app.use('/api', contactform);
 app.use('/api', bookdemoform);
 app.use('/api', contact);
-app.use('/api', customplan);
-app.use('/api', chooseplan);
-app.use('/api', payment);
 
 // Define Routes
 app.use('/api/cashfree', cashfree); // Cashfree routes
