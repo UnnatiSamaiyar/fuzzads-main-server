@@ -17,7 +17,7 @@ router.post('/customplan/submit', async (req, res) => {
 
   const mailOptions = {
     from: email,
-    to: 'unnatisamaiyar02@gmail.com', // Receiver's email
+    to: 'contact@fuzzads.com', // Receiver's email
     subject: 'New Custom Plan Request',
     html: `
       <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #00a5e0;">
