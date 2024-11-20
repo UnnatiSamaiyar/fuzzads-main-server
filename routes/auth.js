@@ -111,10 +111,16 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// POST /api/auth/send-otp
-router.post('/send-otp', authController.sendOtp);
+// POST /api/auth/request-reset
+router.post('/request-reset', authController.requestPasswordReset);
 
 // POST /api/auth/verify-otp
-router.post('/verify-otp', authController.verifyOtp);
+router.post('/verify-otp', authController.verifyOTP);
+
+// POST /api/auth/reset-password
+router.post('/reset-password', authController.resetPassword);
+
+
 
 module.exports = router;
+    
