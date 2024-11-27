@@ -1,111 +1,72 @@
-require("dotenv").config();
 const express = require("express");
+const router = express.Router();
 const crypto = require("crypto");
 const axios = require("axios");
-const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
 
-const app = express();
+require("dotenv").config();
 
-const router = express.Router();
+// Extract PhonePe credentials from environment variables
+const MERCHANT_ID = process.env.MERCHANT_ID || "M226Q15EKG437";
+const MERCHANT_KEY = process.env.MERCHANT_KEY || "ac2cb79f-b306-40fd-a05f-238315f8c246";
+const SALT_INDEX = process.env.SALT_INDEX || "1";
+const PROD_URL = process.env.PROD_URL || "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 
-const MERCHANT_KEY = "ac2cb79f-b306-40fd-a05f-238315f8c246";
-const MERCHANT_ID = "M226Q15EKG437";
-
-const MERCHANT_BASE_URL = "https://api.phonepe.com/apis/hermes"; // Payment URL
-const MERCHANT_STATUS_URL = "https://api.phonepe.com/apis/hermes"; // Status URL
-
-const TEST_KEY = "f2c864ec-b46a-4732-8ddf-fa11666d2acc";
-const TEST_ID = "PGTESTPAYUAT144";
-const TEST_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox";
-const TEST_INDEX = 1;
-
-const redirectUrl = "http://localhost:8000/status"; // Callback URL after payment
-const successUrl = "https://fuzzads.com/thank-you";
-const failureUrl = "https://fuzzads.com/error";
-
-// Environment variables
-const {
-  PHONEPE_MERCHANT_ID,
-  PHONEPE_MERCHANT_KEY,
-  SALT_KEY,
-  PRODUCTION_LINK,
-} = process.env;
-
-// Payment endpoint
-// Route to create order and initiate payment
-app.post('/create-order', async (req, res) => {
-  const { name, mobileNumber, amount } = req.body;
-  const orderId = uuidv4();
-
-  const paymentPayload = {
-      merchantId: MERCHANT_ID,
-      merchantUserId: name,
-      mobileNumber: mobileNumber,
-      amount: amount,
-      merchantTransactionId: orderId,
-      redirectUrl: `${redirectUrl}/?id=${orderId}`,
-      redirectMode: 'POST',
-      paymentInstrument: {
-          type: 'PAY_PAGE'
-      }
-  };
-
-  const payload = Buffer.from(JSON.stringify(paymentPayload)).toString('base64');
-  const keyIndex = 1;
-  const string = payload + '/pg/v1/pay' + MERCHANT_KEY;
-  const sha256 = crypto.createHash('sha256').update(string).digest('hex');
-  const checksum = sha256 + '###' + keyIndex;
-
-  const option = {
-      method: 'POST',
-      url: MERCHANT_BASE_URL,
-      headers: {
-          accept: 'application/json',
-          'Content-Type': 'application/json',
-          'X-VERIFY': checksum
-      },
-      data: {
-          request: payload
-      }
-  };
-
+// Endpoint to initiate payment
+router.post("/phonepe/payment", async (req, res) => {
   try {
-      const response = await axios.request(option);
-      res.status(200).json({ msg: "OK", url: response.data.data.instrumentResponse.redirectInfo.url });
+    const { amount, transactionId, redirectUrl, callbackUrl } = req.body;
+
+    if (!amount || !transactionId || !redirectUrl || !callbackUrl) {
+      return res.status(400).json({ error: "Missing required fields." });
+    }
+
+    const payload = {
+      merchantId: MERCHANT_ID,
+      amount: amount * 100, // Convert to paisa
+      transactionId,
+      redirectUrl,
+      callbackUrl,
+    };
+
+    // Stringify the payload and encode it to Base64
+    const payloadString = JSON.stringify(payload);
+    const encodedPayload = Buffer.from(payloadString).toString("base64");
+
+    // Generate the checksum using HMAC-SHA256
+    const checksum = crypto
+      .createHmac("sha256", MERCHANT_KEY)
+      .update(encodedPayload)
+      .digest("hex");
+
+    // Prepare the request headers
+    const headers = {
+      "Content-Type": "application/json",
+      "X-VERIFY": `${checksum}###${SALT_INDEX}`,
+    };
+
+    // Make the API request to PhonePe
+    const response = await axios.post(PROD_URL, { request: encodedPayload }, { headers });
+
+    if (response.data.success) {
+      return res.status(200).json({
+        success: true,
+        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url,
+      });
+    } else {
+      return res.status(400).json({ success: false, error: response.data.message });
+    }
   } catch (error) {
-      console.log("Error in payment", error);
-      res.status(500).json({ error: 'Failed to initiate payment' });
+    console.error("Error initiating PhonePe payment:", error.message);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-// Route to check the payment status
-app.post('/status', async (req, res) => {
-  const merchantTransactionId = req.query.id;
+// Endpoint to handle PhonePe callback
+router.post("/phonepe/callback", (req, res) => {
+  console.log("PhonePe callback data:", req.body);
 
-  const keyIndex = 1;
-  const string = `/pg/v1/status/${MERCHANT_ID}/${merchantTransactionId}` + MERCHANT_KEY;
-  const sha256 = crypto.createHash('sha256').update(string).digest('hex');
-  const checksum = sha256 + '###' + keyIndex;
-
-  const option = {
-      method: 'GET',
-      url: `${MERCHANT_STATUS_URL}/${MERCHANT_ID}/${merchantTransactionId}`,
-      headers: {
-          accept: 'application/json',
-          'Content-Type': 'application/json',
-          'X-VERIFY': checksum,
-          'X-MERCHANT-ID': MERCHANT_ID
-      }
-  };
-
-  axios.request(option).then((response) => {
-      if (response.data.success === true) {
-          return res.redirect(successUrl);
-      } else {
-          return res.redirect(failureUrl);
-      }
-  });
+  // Validate the response and process it accordingly
+  res.status(200).send("Callback received");
 });
 
 module.exports = router;
