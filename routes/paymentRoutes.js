@@ -12,6 +12,7 @@ const SALT_INDEX = process.env.SALT_INDEX || "1";
 const PROD_URL = process.env.PROD_URL || "https://api.phonepe.com/apis/hermes/pg/v1/pay";
 
 // Endpoint to initiate payment
+// Endpoint to initiate payment
 router.post("/phonepe/payment", async (req, res) => {
   try {
     const { amount, transactionId, redirectUrl, callbackUrl } = req.body;
@@ -20,12 +21,13 @@ router.post("/phonepe/payment", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields." });
     }
 
+    // Prepare the payload to send to PhonePe
     const payload = {
       merchantId: MERCHANT_ID,
       amount: amount * 100, // Convert to paisa
       transactionId,
-      redirectUrl,
-      callbackUrl,
+      redirectUrl,    // Include the redirectUrl here
+      callbackUrl,    // Include the callbackUrl here
     };
 
     // Stringify the payload and encode it to Base64
@@ -47,10 +49,11 @@ router.post("/phonepe/payment", async (req, res) => {
     // Make the API request to PhonePe
     const response = await axios.post(PROD_URL, { request: encodedPayload }, { headers });
 
+    // Handle response from PhonePe
     if (response.data.success) {
       return res.status(200).json({
         success: true,
-        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url,
+        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url,  // PhonePe's payment URL
       });
     } else {
       return res.status(400).json({ success: false, error: response.data.message });
@@ -60,6 +63,7 @@ router.post("/phonepe/payment", async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
+
 
 // Endpoint to handle PhonePe callback
 router.post("/phonepe/callback", (req, res) => {
