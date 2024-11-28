@@ -6,38 +6,44 @@ const axios = require("axios");
 require("dotenv").config();
 
 // Extract PhonePe credentials from environment variables
-const MERCHANT_ID = process.env.MERCHANT_ID || "M226Q15EKG437";
-const MERCHANT_KEY = process.env.MERCHANT_KEY || "ac2cb79f-b306-40fd-a05f-238315f8c246";
-const SALT_INDEX = process.env.SALT_INDEX || "1";
-const PROD_URL = process.env.PROD_URL || "https://api.phonepe.com/apis/hermes/pg/v1/pay";
+const MERCHANT_ID = process.env.MERCHANT_ID;
+const MERCHANT_KEY = process.env.MERCHANT_KEY; // Update with your key
+const SALT_INDEX = process.env.SALT_INDEX; // Update with your salt index
+const PROD_URL = process.env.PROD_URL; // PhonePe Production URL
 
 // Endpoint to initiate payment
 router.post("/phonepe/payment", async (req, res) => {
   try {
-    const { amount, transactionId, redirectUrl, callbackUrl } = req.body;
+    const { amount, transactionId, redirectUrl, callbackUrl, mobileNumber } = req.body;
 
     if (!amount || !transactionId || !redirectUrl || !callbackUrl) {
       console.error("Missing required fields:", req.body);
       return res.status(400).json({ error: "Missing required fields." });
     }
 
-    // Prepare the payload to send to PhonePe
+    // Prepare the payload
     const payload = {
       merchantId: MERCHANT_ID,
+      merchantTransactionId: transactionId,
+      merchantUserId: "MUID123", // Static or dynamically fetched
       amount: amount * 100, // Convert to paisa
-      transactionId,
-      redirectUrl,    // Include the redirectUrl here
-      callbackUrl,    // Include the callbackUrl here
+      redirectUrl,
+      redirectMode: "REDIRECT",
+      callbackUrl,
+      mobileNumber: mobileNumber || "", // Optional
+      paymentInstrument: {
+        type: "PAY_PAGE",
+      },
     };
 
-    // Stringify the payload and encode it to Base64
+    // Stringify and encode the payload to Base64
     const payloadString = JSON.stringify(payload);
     const encodedPayload = Buffer.from(payloadString).toString("base64");
 
-    // Generate the checksum using HMAC-SHA256
+    // Generate the checksum
     const checksum = crypto
-      .createHmac("sha256", MERCHANT_KEY)
-      .update(encodedPayload)
+      .createHash("sha256")
+      .update(encodedPayload + "/pg/v1/pay" + MERCHANT_KEY)
       .digest("hex");
 
     // Prepare the request headers
@@ -47,16 +53,17 @@ router.post("/phonepe/payment", async (req, res) => {
     };
 
     console.log("Payload being sent to PhonePe:", payload);
+    console.log("Checksum:", checksum);
 
     // Make the API request to PhonePe
     const response = await axios.post(PROD_URL, { request: encodedPayload }, { headers });
 
-    // Handle response from PhonePe
+    // Handle response
     if (response.data.success) {
       console.log("PhonePe response:", response.data);
       return res.status(200).json({
         success: true,
-        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url,  // PhonePe's payment URL
+        paymentUrl: response.data.data.instrumentResponse.redirectInfo.url, // Payment URL
       });
     } else {
       console.error("PhonePe API Error:", response.data.message);
@@ -71,7 +78,6 @@ router.post("/phonepe/payment", async (req, res) => {
 // Endpoint to handle PhonePe callback
 router.post("/phonepe/callback", (req, res) => {
   console.log("PhonePe callback data:", req.body);
-  // Validate the response and process it accordingly
   res.status(200).send("Callback received");
 });
 
