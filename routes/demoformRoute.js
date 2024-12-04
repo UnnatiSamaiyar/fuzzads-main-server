@@ -18,7 +18,7 @@ router.post('/demoform', async (req, res) => {
   
   const mailOptions = {
     from: process.env.EMAIL_USER, 
-    to: 'fuzzads.co@gmail.com', 
+    to: 'contact@fuzzads.com', 
     subject: 'Booked a free demo session!',
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone}\nLocation: ${location}\nTime Slot: ${timeslot}`
   };
