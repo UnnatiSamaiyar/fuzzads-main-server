@@ -1,4 +1,5 @@
 const express = require("express");
+const helmet = require("helmet");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const formRoutes = require("./routes/formRoutes");
@@ -23,6 +24,12 @@ app.use(cors());
 connectDB();
 
 app.use(express.json());
+
+app.use(
+  helmet({
+    frameguard: { action: "SAMEORIGIN" }, // Use SAMEORIGIN or DENY as needed
+  })
+);
 
 app.use(
   session({
