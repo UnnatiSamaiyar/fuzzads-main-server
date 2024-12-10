@@ -28,6 +28,12 @@ app.use(express.json());
 app.use(
   helmet({
     frameguard: { action: "SAMEORIGIN" }, // Use SAMEORIGIN or DENY as needed
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true, // Apply to all subdomains
+      preload: true, // Indicate that your domain should be included in the HSTS preload list
+    },
   })
 );
 
