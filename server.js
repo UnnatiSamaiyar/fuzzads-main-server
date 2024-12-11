@@ -19,24 +19,34 @@ require("./config/passport.js");
 
 const app = express();
 
-app.use(cors());
+// Use CORS with explicit settings for security
+app.use(
+  cors({
+    origin: ["http://fuzzads.com"], // Replace with your trusted domains
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
+// Connect to the database
 connectDB();
 
 app.use(express.json());
 
+// Helmet for secure headers
 app.use(
   helmet({
-    frameguard: { action: "SAMEORIGIN" }, // Use SAMEORIGIN or DENY as needed
+    frameguard: { action: "SAMEORIGIN" },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     hsts: {
       maxAge: 31536000, // 1 year
-      includeSubDomains: true, // Apply to all subdomains
-      preload: true, // Indicate that your domain should be included in the HSTS preload list
+      includeSubDomains: true,
+      preload: true,
     },
   })
 );
 
+// Session management
 app.use(
   session({
     secret:
@@ -46,9 +56,12 @@ app.use(
     saveUninitialized: true,
   })
 );
+
+// Initialize passport
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Route declarations
 app.use("/api/auth", authRoutes);
 app.use("/api", formRoutes);
 app.use("/api", contactform);
@@ -57,9 +70,8 @@ app.use("/api", contact);
 app.use("/api", customplan);
 app.use("/api", chooseplan);
 app.use("/api", paymentRoutes);
-
 app.use("/api/cashfree", cashfree);
 
+// Start the server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
