@@ -36,6 +36,7 @@ app.use(express.json());
 // Helmet for secure headers
 app.use(
   helmet({
+    noSniff: true,
     frameguard: { action: "SAMEORIGIN" },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },  // Explicitly setting the Referrer-Policy header
     hsts: {
