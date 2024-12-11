@@ -22,7 +22,7 @@ const app = express();
 // Use CORS with explicit settings for security
 app.use(
   cors({
-    origin: ["http://fuzzads.com"], // Replace with your trusted domains
+    origin: ["https://fuzzads.com"], // Replace with your trusted domains
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -37,14 +37,15 @@ app.use(express.json());
 app.use(
   helmet({
     frameguard: { action: "SAMEORIGIN" },
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },  // Explicitly setting the Referrer-Policy header
     hsts: {
       maxAge: 31536000, // 1 year
-      includeSubDomains: true,
-      preload: true,
+      includeSubDomains: true, // Apply to all subdomains
+      preload: true, // Indicate that your domain should be included in the HSTS preload list
     },
   })
 );
+
 
 // Session management
 app.use(
