@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors"); // Add this line
 const helmet = require("helmet");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
@@ -8,7 +9,6 @@ const bookdemoform = require("./routes/demoformRoute");
 const contact = require("./routes/maincontactform");
 const passport = require("passport");
 const session = require("express-session");
-const cors = require("cors");
 const customplan = require("./routes/customplan.js");
 const chooseplan = require("./routes/chooseplan.js");
 const cashfree = require("./routes/cashfreeRoute.js");
@@ -19,36 +19,48 @@ require("./config/passport.js");
 
 const app = express();
 
-// Use CORS with explicit settings for security
-app.use(
-  cors({
-    origin: ["https://fuzzads.com"], // Replace with your trusted domains
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// List of allowed origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://fuzzads.com'
+];
 
-// Connect to the database
+// Configure CORS middleware
+const corsOptions = {
+  origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+          callback(null, true);
+      } else {
+          callback(new Error('Not allowed by CORS'));
+      }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
+
 connectDB();
 
 app.use(express.json());
 
-// Helmet for secure headers
 app.use(
   helmet({
-    noSniff: true,
     frameguard: { action: "SAMEORIGIN" },
-    referrerPolicy: { policy: "strict-origin-when-cross-origin" },  // Explicitly setting the Referrer-Policy header
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     hsts: {
-      maxAge: 31536000, // 1 year
-      includeSubDomains: true, // Apply to all subdomains
-      preload: true, // Indicate that your domain should be included in the HSTS preload list
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
     },
   })
 );
 
-
-// Session management
 app.use(
   session({
     secret:
@@ -58,12 +70,9 @@ app.use(
     saveUninitialized: true,
   })
 );
-
-// Initialize passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Route declarations
 app.use("/api/auth", authRoutes);
 app.use("/api", formRoutes);
 app.use("/api", contactform);
@@ -74,6 +83,6 @@ app.use("/api", chooseplan);
 app.use("/api", paymentRoutes);
 app.use("/api/cashfree", cashfree);
 
-// Start the server
 const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
