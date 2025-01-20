@@ -22,7 +22,8 @@ const app = express();
 // List of allowed origins
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://fuzzads.com'
+  'https://fuzzads.com',
+  'https://www.fuzzads.com'
 ];
 
 // Configure CORS middleware
